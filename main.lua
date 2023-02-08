@@ -6,6 +6,8 @@ function love.load()
     sprites.bullet = love.graphics.newImage('sprites/bullet.png')
     sprites.player = love.graphics.newImage('sprites/player.png')
     sprites.zombie = love.graphics.newImage('sprites/zombie.png')
+    
+    sprites.bossZombie = love.graphics.newImage('sprites/bossZombie.png')
 
     player = {}
     player.x = love.graphics.getWidth() / 2
@@ -16,11 +18,13 @@ function love.load()
 
     zombies = {}
     bullets = {}
+    bossZombies = {}
 
     gameState = 1
     score = 0
     maxTime = 2
     timer = maxTime
+    kills = 0
 end
 
 function love.update(dt)
@@ -55,7 +59,7 @@ end
 
     for i,b in ipairs(bullets) do
         b.x = b.x + (math.cos( b.direction ) * b.speed * dt)
-        b.y = b.y + (math.cos( b.direction ) * b.speed * dt)
+        b.y = b.y + (math.sin( b.direction ) * b.speed * dt)
     end
 
     for i=#bullets, 1, -1 do
@@ -64,13 +68,19 @@ end
             table.remove(bullets, i)
         end
     end
-
-    for i,z in ipairs(zombies) do
+        for i,z in ipairs(bossZombies) do
+          z.x = z.x + math.random(-100, 100) * dt
+          z.y = z.y + math.random(-100, 100) * dt
+        end  
         for j,b in ipairs(bullets) do
             if distanceBetween(z.x, z.y, b.x, b.y) < 20 then
                 z.dead = true
                 b.dead = true
                 score = score + 1
+                kills = kills + 1
+                if kills % 1 == 0 then
+                    spawnBossZombie()
+                end
             end
         end
     end
@@ -79,6 +89,12 @@ end
         local z = zombies[i]
         if z.dead == true then
             table.remove(zombies, i)
+        end
+    end
+    for i=#bossZombies,1,-1 do
+        local z = bossZombies[i]
+        if z.dead == true then
+            table.remove(bossZombies, i)
         end
     end
 
@@ -97,7 +113,6 @@ end
             timer = maxTime
         end
     end
-end
 
 function love.draw()
     love.graphics.draw(sprites.background, 0, 0)
@@ -113,7 +128,12 @@ function love.draw()
     for i,z in ipairs(zombies) do
         love.graphics.draw(sprites.zombie, z.x, z.y, zombiePlayerAngle(z), nil, nil, sprites.zombie:getWidth()/2, sprites.zombie:getHeight()/2)
     end
-
+    for i,z in ipairs(bossZombies) do
+        love.graphics.setColor(0, 1, 0)  -- set the color
+        love.graphics.draw(sprites.bossZombie, z.x, z.y, BossZombiePlayerAngle(z), nil, nil, sprites.bossZombie:getWidth()/2, sprites.bossZombie:getHeight()/2)
+        love.graphics.setColor(1, 1, 1, 1)  -- reset the color back to white
+      end
+      
     for i,b in ipairs(bullets) do
         love.graphics.draw(sprites.bullet, b.x, b.y, nil, 0.42, nil, sprites.bullet:getWidth()/2, sprites.bullet:getHeight()/2)
     end
@@ -144,6 +164,10 @@ function zombiePlayerAngle(enemy)
     return math.atan2(player.y - enemy.y, player.x - enemy.x)
 end
 
+function BossZombiePlayerAngle(enemy)
+    return math.atan2(player.y - enemy.y, player.x - enemy.x)
+end
+
 function spawnZombie()
     local zombie = {}
     zombie.x = 0
@@ -168,6 +192,29 @@ function spawnZombie()
     
     table.insert(zombies, zombie)    
 end
+
+function spawnBossZombie()
+    local bossZombie = BossZombie:new()
+    table.insert(bossZombies, bossZombie)
+end
+      
+    
+    local side = math.random(1, 4)
+    if side == 1 then
+        bossZombie.x = -30
+        bossZombie.y = math.random(0, love.graphics.getHeight())
+    elseif side == 2 then
+        bossZombie.x = love.graphics.getWidth() + 30
+        bossZombie.y = math.random(0, love.graphics.getHeight())
+    elseif side == 3 then
+        bossZombie.x = math.random(0, love.graphics.getWidth())
+        bossZombie.y = math.random(0, love.graphics.getHeight())
+    elseif side == 4 then
+        bossZombie.x = math.random(0, love.graphics.getWidth())
+        bossZombie.y = love.graphics.getHeight() + 30
+    end
+    
+    table.insert(bossZombies, bossZombie)
 
 function spawnBullet()
     local bullet = {}
